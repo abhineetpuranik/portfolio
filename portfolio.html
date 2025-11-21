@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Abhineet Puranik | Software, AI & Game Development Student</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+    /* Reset & base */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: #000;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      line-height: 1.3;
+    }
+
+    /* Header / HUD */
+    .hud-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.7));
+      border-bottom: 3px solid #ff1e1e;
+      z-index: 1000;
+    }
+
+    .driver-info { display:flex; gap:14px; align-items:center; }
+    .driver-number {
+      width:52px; height:52px; display:flex; align-items:center; justify-content:center;
+      background:#ff1e1e; font-weight:800; font-size:28px;
+      clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+    }
+    .driver-name { font-size:22px; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+    .live-timing { display:flex; gap:26px; align-items:center; }
+    .timing-item { text-align:center; }
+    .timing-label { font-size:11px; color:#9a9a9a; text-transform:uppercase; letter-spacing:1px; }
+    .timing-value { font-family: 'Courier New', monospace; font-size:18px; font-weight:700; color:#00ff00; }
+
+    /* Hero - use min-height and account for header */
+    .race-track-hero {
+      position: relative;
+      min-height: calc(100vh - 80px); /* ensures header doesn't add extra space */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align: center;
+      overflow:hidden;
+      padding: 40px 20px;
+    }
+
+    /* background layers constrained to avoid overflow */
+    .track-bg {
+      position:absolute; inset:0;
+      background:
+        repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.03) 60px, rgba(255,255,255,0.03) 120px),
+        radial-gradient(ellipse at center, rgba(255,255,255,0.02), transparent 40%);
+      z-index:0;
+      max-height:100%;
+      overflow:hidden;
+    }
+
+    .track-lines {
+      position:absolute; inset:0;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent 0px,
+          transparent 48px,
+          #ff1e1e 48px,
+          #ff1e1e 50px,
+          transparent 50px,
+          transparent 98px,
+          #fff 98px,
+          #fff 100px
+        );
+      opacity:0.08;
+      z-index:0;
+      animation: trackScroll 3s linear infinite;
+      max-height:100%;
+      overflow:hidden;
+      background-size: 200px 200px;
+    }
+    @keyframes trackScroll { from { transform:translateX(0); } to { transform:translateX(120px); } }
+
+    .hero-telemetry { position:relative; z-index:1; text-align:center; max-width:1100px; padding-top:150px; }
+    .position-display {
+      font-size:160px; font-weight:800; line-height:0.9;
+      background:linear-gradient(180deg,#fff 0%, #ff1e1e 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-shadow:0 0 70px rgba(255,30,30,0.45);
+    }
+    .role-display {
+      font-size:34px; font-weight:700; text-transform:uppercase; margin-top:12px; letter-spacing:6px;
+    }
+    .hero-sub {
+      font-size:16px; color:#cfcfcf; margin-top:10px; max-width:760px; margin-left:auto; margin-right:auto;
+    }
+    .drs-link {
+      display:inline-block; margin-top:26px; padding:14px 44px; background:#00ff00; color:#000;
+      font-weight:800; text-transform:uppercase; letter-spacing:2px; text-decoration:none;
+      clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .drs-link:hover { transform:scale(1.03); box-shadow:0 0 26px rgba(0,255,0,0.6); }
+
+    /* Sections */
+    section { padding: 80px 28px; }
+
+    /* Pit Wall / Projects */
+    .pit-wall { margin-top: 60px;background: linear-gradient(180deg,#0a0a0a 0%, #000 100%); position:relative; }
+    .pit-wall::before { content:'PIT WALL'; position:absolute; left:28px; top:28px; color:#ff1e1e; font-weight:800; letter-spacing:3px; font-size:13px; }
+    .standings-title { text-align:center; font-size:54px; font-weight:800; margin-bottom:48px; text-transform:uppercase; letter-spacing:4px; }
+    .standings-grid { max-width:1400px; margin:0 auto; display:grid; gap:14px; }
+
+    .standing-row {
+      display:grid; grid-template-columns:80px 1fr 180px 120px; align-items:center;
+      gap:18px; padding:22px; background:linear-gradient(90deg, rgba(255,30,30,0.06) 0%, rgba(0,0,0,0.7) 30%);
+      border-left:5px solid #ff1e1e; position:relative; overflow:hidden; transition:transform .22s ease;
+    }
+    .standing-row:hover { transform:translateX(8px); }
+
+    .standing-pos { font-size:40px; font-weight:800; color:#ff1e1e; }
+    .project-info h3 { font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .project-info p { color:#bfbfbf; font-size:15px; line-height:1.4; }
+
+    .tech-badges { display:flex; gap:8px; flex-wrap:wrap; }
+    .tech-badge {
+      padding:6px 12px; font-size:12px; font-weight:700; text-transform:uppercase;
+      background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);
+      clip-path: polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%);
+    }
+
+    .points-display { text-align:center; }
+    .points-label { font-size:11px; color:#9d9d9d; text-transform:uppercase; letter-spacing:1px; }
+    .points-value { font-family:'Courier New', monospace; font-size:28px; font-weight:800; color:#00ff00; margin-top:6px; }
+
+    /* Telemetry */
+    .telemetry-section { position:relative; }
+    .telemetry-section::before { content:'TELEMETRY'; position:absolute; left:28px; top:28px; color:#00ff00; font-weight:800; letter-spacing:3px; font-size:13px; }
+    .telemetry-grid { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px; }
+
+    .telemetry-box { background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.8)); border:2px solid rgba(255,255,255,0.06); padding:22px; position:relative; overflow:hidden; }
+    .telemetry-box::before { content:''; position:absolute; left:0; top:0; height:3px; width:100%; background:linear-gradient(90deg,#ff1e1e, #00ff00); }
+    .telem-label { color:#bdbdbd; font-size:13px; text-transform:uppercase; letter-spacing:1.2px; }
+    .telem-value { font-family:'Courier New', monospace; color:#00ff00; font-weight:800; font-size:36px; margin-top:8px; }
+
+    .telem-bar-container { margin-top:16px; height:8px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; }
+    .telem-bar { height:100%; background:linear-gradient(90deg,#ff1e1e, #00ff00); transition:width 1.6s ease; }
+
+    /* Sector Times / Skills */
+    .sector-times { background: linear-gradient(180deg,#000, #0a0a0a); position:relative; }
+    .sector-times::before { content:'SECTOR ANALYSIS'; position:absolute; left:28px; top:28px; color:#ff1e1e; font-weight:800; letter-spacing:3px; font-size:13px; }
+    .sectors-container { max-width:1000px; margin:60px auto 0; }
+
+    .sector { background:rgba(255,255,255,0.02); padding:18px; border-left:4px solid #ff1e1e; margin-bottom:28px; }
+    .sector-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .sector-name { font-weight:800; text-transform:uppercase; letter-spacing:1px; font-size:18px; }
+    .sector-time { font-family:'Courier New', monospace; color:#00ff00; font-weight:800; }
+    .sector-bar { height:12px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; }
+    .sector-progress { height:100%; background:linear-gradient(90deg,#ff1e1e 0%, #00ff00 50%, #00ff00 100%); position:relative; }
+    .sector-progress::after { content:''; position:absolute; top:0; right:0; width:28px; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.45)); animation:sweep 2s linear infinite; }
+    @keyframes sweep { from { transform:translateX(-100%);} to { transform:translateX(100%);} }
+
+    /* Radio / Contact */
+    .radio-contact { text-align:center; padding:100px 20px; position:relative; }
+    .radio-static { position:absolute; inset:0; pointer-events:none; background-image: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px); z-index:0; }
+    .radio-content { position:relative; z-index:1; max-width:860px; margin:0 auto; }
+
+    .radio-header { color:#ff1e1e; font-weight:800; letter-spacing:3px; margin-bottom:18px; font-size:12px; }
+    .radio-message { font-size:40px; font-weight:800; text-transform:uppercase; letter-spacing:2px; margin-bottom:16px; }
+    .radio-subtext { color:#cfcfcf; font-size:16px; margin-bottom:28px; }
+
+    .radio-buttons { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+    .radio-btn {
+      display:inline-block; padding:12px 30px; text-decoration:none; color:#fff; border:2px solid #fff; font-weight:800;
+      text-transform:uppercase; letter-spacing:1px; clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+      background:transparent;
+    }
+    .radio-btn:hover { background:#fff; color:#000; transform:scale(1.03); box-shadow:0 0 22px rgba(255,255,255,0.12); }
+
+    /* Footer - constrain pattern tile and prevent overflow */
+    .checkered-footer {
+      background: repeating-linear-gradient(45deg, #000 0px, #000 20px, #fff 20px, #fff 40px);
+      padding: 40px 0;
+      text-align: center;
+      overflow: hidden; /* prevents pattern from causing extra space */
+    }
+    .footer-content { display:inline-block; padding:18px 28px; background:#000; position:relative; z-index:2; }
+    .footer-content p { color:#fff; text-transform:uppercase; letter-spacing:2px; font-weight:700; }
+
+    /* Responsive */
+    @media (max-width:900px) {
+      .position-display { font-size:110px; }
+      .role-display { font-size:28px; letter-spacing:4px; }
+      .standing-row { grid-template-columns:60px 1fr; gap:12px; }
+      .tech-badges { margin-top:8px; }
+      .telemetry-grid { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+    }
+    @media (max-width:520px) {
+      .position-display { font-size:86px; }
+      .driver-number { width:44px; height:44px; font-size:20px; }
+      .driver-name { font-size:18px; }
+      .hud-header { padding:12px; height:auto; gap:10px; flex-direction:column; align-items:flex-start; }
+      section { padding: 60px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HUD Header -->
+  <header class="hud-header" role="banner">
+    <div class="driver-info">
+      <div class="driver-number">03</div>
+      <div>
+        <div class="driver-name">Abhineet Puranik</div>
+        <div style="font-size:11px;color:#9d9d9d;margin-top:4px;">Software, AI & Game Development Student</div>
+      </div>
+    </div>
+
+    <div class="live-timing" aria-hidden="true">
+      <div class="timing-item">
+        <div class="timing-label">Experience</div>
+        <div class="timing-value">1+ YRS</div>
+      </div>
+      <div class="timing-item">
+        <div class="timing-label">Projects</div>
+        <div class="timing-value">12+</div>
+      </div>
+      <div class="timing-item">
+        <div class="timing-label">Location</div>
+        <div class="timing-value" style="color:#00ff00;">Indore</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="race-track-hero" aria-label="Hero">
+      <div class="track-bg" aria-hidden="true"></div>
+      <div class="track-lines" aria-hidden="true"></div>
+
+      <div class="hero-telemetry">
+        <div class="position-display">P1</div>
+        <div class="role-display">Software, AI & Game Development Student</div>
+        <div class="hero-sub">
+          I build software systems, explore machine learning, and create gameplay prototypes using Unity & Unreal.
+          Currently pursuing a BE in IT (IET DAVV). Reach out for collaboration, internships, or creative projects.
+        </div>
+        <a class="drs-link" href="#projects">View Projects</a>
+      </div>
+    </section>
+
+    <!-- Projects / Pit Wall -->
+    <section id="projects" class="pit-wall" aria-labelledby="projects-title">
+      <h2 id="projects-title" class="standings-title">Championship Standings</h2>
+
+      <div class="standings-grid">
+
+        <!-- 1: F1 Win Predictor -->
+        <article class="standing-row">
+          <div class="standing-pos">1st</div>
+          <div class="project-info">
+            <h3>Machine Learning — F1 Win Predictor</h3>
+            <p>Developed an ML classifier to predict race win probabilities using qualifying position, stint pace, tyre strategy, pit stops, weather, and team metrics. Built end-to-end pipelines for feature engineering, training, evaluation (ROC-AUC, F1) and produced interpretable insights into the main win drivers.</p>
+          </div>
+          <div class="tech-badges">
+            <span class="tech-badge">Python</span>
+            <span class="tech-badge">scikit-learn</span>
+            <span class="tech-badge">Feature Eng.</span>
+            <span class="tech-badge">Visualization</span>
+          </div>
+          <div class="points-display">
+            <div class="points-label">Impact</div>
+            <div class="points-value">340</div>
+          </div>
+        </article>
+
+        <!-- 2: Unity + Unreal Game Dev -->
+        <article class="standing-row">
+          <div class="standing-pos">2nd</div>
+          <div class="project-info">
+            <h3>Unity & Unreal Gameplay Systems</h3>
+            <p>Built gameplay prototypes across Unity and Unreal Engine 5 — character controllers, interaction systems, and environment prototypes using Blueprints/C++ (UE5) and C# (Unity).</p>
+          </div>
+          <div class="tech-badges">
+            <span class="tech-badge">Unreal</span>
+            <span class="tech-badge">Unity</span>
+            <span class="tech-badge">C++</span>
+            <span class="tech-badge">C#</span>
+          </div>
+          <div class="points-display">
+            <div class="points-label">Impact</div>
+            <div class="points-value">310</div>
+          </div>
+        </article>
+
+        <!-- 3: Angular UI Components -->
+        <article class="standing-row">
+          <div class="standing-pos">3rd</div>
+          <div class="project-info">
+            <h3>Angular UI Component Library</h3>
+            <p>Developed reusable UI components and shared libraries during an internship to standardize UI patterns and speed up development cycles for multiple projects.</p>
+          </div>
+          <div class="tech-badges">
+            <span class="tech-badge">Angular</span>
+            <span class="tech-badge">TypeScript</span>
+            <span class="tech-badge">SCSS</span>
+            <span class="tech-badge">Git</span>
+          </div>
+          <div class="points-display">
+            <div class="points-label">Impact</div>
+            <div class="points-value">290</div>
+          </div>
+        </article>
+
+        <!-- 4: GDG Content & Events -->
+        <article class="standing-row">
+          <div class="standing-pos">4th</div>
+          <div class="project-info">
+            <h3>GDG — Tech Content & Event Systems</h3>
+            <p>Led content creation and coordination for Google Developer Groups events — workshops, hackathons and outreach; managed media copy, event promotion and documentation workflows.</p>
+          </div>
+          <div class="tech-badges">
+            <span class="tech-badge">Content</span>
+            <span class="tech-badge">Coordination</span>
+            <span class="tech-badge">Leadership</span>
+          </div>
+          <div class="points-display">
+            <div class="points-label">Impact</div>
+            <div class="points-value">270</div>
+          </div>
+        </article>
+
+        <!-- 5: Gasbot - Python Chatbot -->
+        <article class="standing-row">
+          <div class="standing-pos">5th</div>
+          <div class="project-info">
+            <h3>Gasbot — Python Chatbot for Customer Service</h3>
+            <p>Built 'Gasbot', a Python-based conversational agent for a gas company to automate customer queries, FAQs and ticket creation — integrated NLU modules, retrieval-augmented responses and dialog flows for faster resolution.</p>
+          </div>
+          <div class="tech-badges">
+            <span class="tech-badge">Python</span>
+            <span class="tech-badge">NLU</span>
+            <span class="tech-badge">Dialog Flow</span>
+            <span class="tech-badge">Automation</span>
+          </div>
+          <div class="points-display">
+            <div class="points-label">Impact</div>
+            <div class="points-value">255</div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Telemetry -->
+    <section class="telemetry-section" aria-labelledby="telemetry-label">
+      <div id="telemetry-label" style="position:absolute;left:-9999px;top:auto;">Telemetry</div>
+      <div class="telemetry-grid">
+        <div class="telemetry-box">
+          <div class="telem-label">Total Projects</div>
+          <div class="telem-value">12+</div>
+          <div class="telem-bar-container"><div class="telem-bar" style="width:100%"></div></div>
+        </div>
+
+        <div class="telemetry-box">
+          <div class="telem-label">AI / ML Focus</div>
+          <div class="telem-value">Active</div>
+          <div class="telem-bar-container"><div class="telem-bar" style="width:92%"></div></div>
+        </div>
+
+        <div class="telemetry-box">
+          <div class="telem-label">Game Dev (UE5/Unity)</div>
+          <div class="telem-value">Ongoing</div>
+          <div class="telem-bar-container"><div class="telem-bar" style="width:86%"></div></div>
+        </div>
+
+        <div class="telemetry-box">
+          <div class="telem-label">Technologies Known</div>
+          <div class="telem-value">10+</div>
+          <div class="telem-bar-container"><div class="telem-bar" style="width:90%"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sector / Skills -->
+    <section class="sector-times" aria-labelledby="skills-label">
+      <div id="skills-label" style="position:absolute;left:-9999px;top:auto;">Skills</div>
+      <div class="sectors-container">
+
+        <div class="sector">
+          <div class="sector-header">
+            <div class="sector-name">Sector 1: Python & AI/ML</div>
+            <div class="sector-time">1:19.321</div>
+          </div>
+          <div class="sector-bar"><div class="sector-progress" style="width:94%"></div></div>
+        </div>
+
+        <div class="sector">
+          <div class="sector-header">
+            <div class="sector-name">Sector 2: Game Dev (Unity & UE5)</div>
+            <div class="sector-time">1:22.845</div>
+          </div>
+          <div class="sector-bar"><div class="sector-progress" style="width:87%"></div></div>
+        </div>
+
+        <div class="sector">
+          <div class="sector-header">
+            <div class="sector-name">Sector 3: Frontend & Web (Angular)</div>
+            <div class="sector-time">1:24.100</div>
+          </div>
+          <div class="sector-bar"><div class="sector-progress" style="width:88%"></div></div>
+        </div>
+
+        <div class="sector">
+          <div class="sector-header">
+            <div class="sector-name">Sector 4: Systems & Programming (C++, Java)</div>
+            <div class="sector-time">1:21.422</div>
+          </div>
+          <div class="sector-bar"><div class="sector-progress" style="width:82%"></div></div>
+        </div>
+
+        <div class="sector">
+          <div class="sector-header">
+            <div class="sector-name">Sector 5: Communication & Leadership</div>
+            <div class="sector-time">1:18.900</div>
+          </div>
+          <div class="sector-bar"><div class="sector-progress" style="width:95%"></div></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Contact / Team Radio -->
+    <section class="radio-contact">
+      <div class="radio-static" aria-hidden="true"></div>
+      <div class="radio-content">
+        <div class="radio-header">⚡ TEAM RADIO ⚡</div>
+        <h2 class="radio-message">"Box Box Box! Let's Connect"</h2>
+        <p class="radio-subtext">I'm open to internships, collaborations, and creative dev projects — especially those involving Python, AI/ML, or game development. Currently pursuing BE in IT at IET DAVV, Indore.</p>
+
+        <div class="radio-buttons">
+          <a class="radio-btn" href="mailto:abhineetpuranik@gmail.com">Email</a>
+          <a class="radio-btn" href="https://www.linkedin.com/in/abhineet-puranik-b2a440289/">LinkedIn</a>
+          <a class="radio-btn" href="https://github.com/abhineetpuranik">GitHub</a>
+          <a class="radio-btn" href="tel:+919926904557">Phone: +91 9926904557</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="checkered-footer" role="contentinfo">
+    <div class="footer-content">
+      <p>&copy; 2025 Abhineet Puranik | Engineered for Performance</p>
+    </div>
+  </footer>
+
+</body>
+</html>
